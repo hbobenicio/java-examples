@@ -1,0 +1,7 @@
+.metadata
+clientdb.xml
+**/target/
+**/.classpath
+**/.project
+**/.settings/
+
