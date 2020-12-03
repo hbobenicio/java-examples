@@ -1,0 +1,36 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    // Logging (SLF4J API + Logback Implementation)
+    implementation 'org.slf4j:slf4j-api:1.7.30'
+    implementation 'ch.qos.logback:logback-classic:1.2.3'
+
+    implementation 'com.ibm.icu:icu4j:68.1'
+
+    // Use JUnit test framework.
+    testImplementation 'junit:junit:4.13'
+}
+
+mainClassName = 'br.com.hbobenicio.javaexamples.readfilesanyencoding.Main'
+
+application {
+    mainClass = mainClassName
+}
+
+jar {
+    manifest {
+        attributes(
+            'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
+            'Main-Class': mainClassName
+        )
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
