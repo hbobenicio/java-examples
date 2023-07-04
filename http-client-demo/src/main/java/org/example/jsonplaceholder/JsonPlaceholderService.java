@@ -6,11 +6,11 @@ import org.example.jsonplaceholder.model.Todo;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 import static java.lang.String.format;
 
@@ -39,8 +39,32 @@ public class JsonPlaceholderService {
         return todoParse(res.body());
     }
 
-    private Todo todoParse(String s) throws JsonProcessingException {
-        return this.jsonMapper.readValue(s, Todo.class);
+    public CompletableFuture<Todo> todoGetAsync(JsonPlaceholderHttpSession session, int todoId) throws IOException, InterruptedException {
+        HttpRequest req = todoGetRequest(todoId);
+        System.err.printf("Sending Request: %s %s%n", req.method(), req.uri());
+
+        var start = Instant.now();
+        CompletableFuture<HttpResponse<String>> resFuture =
+                session.getHttpClient().sendAsync(req, HttpResponse.BodyHandlers.ofString());
+
+        return resFuture
+                .thenApply(res -> {
+                    System.err.printf("Request Elapsed Time: %dms%n", Duration.between(start, Instant.now()).toMillis());
+                    if (res.statusCode() != 200) {
+                        throw unexpectedStatusCode(res.statusCode());
+                    }
+                    return res;
+                })
+                .thenApply(HttpResponse::body)
+                .thenApply(this::todoParse);
+    }
+
+    private Todo todoParse(String s) {
+        try {
+            return this.jsonMapper.readValue(s, Todo.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Parsing body to JSON failed");
+        }
     }
 
     private RuntimeException unexpectedStatusCode(int statusCode) {
